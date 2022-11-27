@@ -173,6 +173,7 @@ class AltiumLabel extends AltiumObject
 		this.y = Number.parseInt(this.attributes.location_y, 10);
 		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10);
 		this.justification = Number.parseInt(this.attributes.justification ?? "0", 10);
+		this.font_id = this.attributes.fontid;
 	}
 }
 
@@ -346,6 +347,12 @@ class AltiumSheetSymbol extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+
+		this.x = Number.parseInt(this.attributes.location_x, 10);
+		this.y = Number.parseInt(this.attributes.location_y, 10);
+		this.width = Number.parseInt(this.attributes.xsize, 10);
+		this.height = Number.parseInt(this.attributes.ysize, 10);
+		this.fill_colour = Number.parseInt(this.attributes.areacolor, 10);
 	}
 }
 
@@ -356,6 +363,18 @@ class AltiumSheetEntry extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+
+		// Distance from top-left coordinate in x10 units
+		this.from_top = 10*Number.parseInt(this.attributes.distancefromtop, 10);
+
+		this.iotype = Number.parseInt(this.attributes.iotype, 10);
+		this.font_id = Number.parseInt(this.attributes.textfontid, 10);
+		this.side = Number.parseInt(this.attributes.side ?? "0", 10);
+		this.style = Number.parseInt(this.attributes.style, 10);
+		this.colour = Number.parseInt(this.attributes.color, 10);
+		this.text_colour = Number.parseInt(this.attributes.textcolor, 10);
+		this.fill_colour = Number.parseInt(this.attributes.areacolor, 10);
+		this.name = this.attributes.name;
 	}
 }
 
@@ -546,7 +565,9 @@ class AltiumSheet extends AltiumObject
 		{
 			const fontName = this.attributes["fontname" + f.toString()];
 			const fontSize = Number.parseInt(this.attributes["size" + f.toString()] ?? "12", 10);
-			this.fonts[f] = { name: fontName, size: fontSize };
+			const fontBold = (this.attributes["bold" + f.toString()] ?? "") == "T";
+			const fontItalics = (this.attributes["italics" + f.toString()] ?? "") == "T";
+			this.fonts[f] = { name: fontName, size: fontSize, bold: fontBold, italics: fontItalics};
 			f++;
 		}
 	}

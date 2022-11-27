@@ -222,6 +222,74 @@ class AltiumSchematicRenderer
 			ctx.stroke();
 		}
 
+		for (let obj of doc.objects.filter((o) => o instanceof AltiumSheetSymbol))
+		{
+			if (!this.#shouldShow(obj)) continue;
+			
+			ctx.fillStyle = this.#altiumColourToHex(obj.fill_colour);
+			ctx.strokeStyle = this.#altiumColourToHex(obj.line_colour);
+			ctx.fillRect(obj.x, obj.y - obj.height, obj.width, obj.height);
+			ctx.strokeRect(obj.x, obj.y - obj.height, obj.width, obj.height);
+		}
+
+		for (let obj of doc.objects.filter((o) => o instanceof AltiumSheetEntry))
+		{
+			if (!this.#shouldShow(obj)) continue;
+			
+			const width = 15;
+			const height = 8;
+			const pad = 5;
+			let iotype = obj.iotype
+			if (obj.side == 1) {
+				iotype = iotype == 1 ? 2 : iotype
+				iotype = iotype == 2 ? 1 : iotype
+			}
+			let x = obj.parent_object.x;
+			if(obj.side == 1)
+				x += obj.parent_object.width - width
+			let y = obj.parent_object.y - obj.from_top - (height/2);
+			let alignment = (obj.side == 0) ? "start" : "end"
+			ctx.fillStyle = this.#altiumColourToHex(obj.fill_colour);
+			ctx.strokeStyle = this.#altiumColourToHex(obj.colour);
+			switch (obj.iotype) {
+				case 1:
+					ctx.beginPath();
+					ctx.moveTo(x, y);
+					ctx.lineTo(x + width - pad, y);
+					ctx.lineTo(x + width, y + (height / 2));
+					ctx.lineTo(x + width - pad, y + height);
+					ctx.lineTo(x, y + height);
+					ctx.lineTo(x, y);
+					ctx.fill();
+					ctx.stroke();
+					break;
+				case 2:
+					ctx.beginPath();
+					ctx.moveTo(x, y + (height / 2));
+					ctx.lineTo(x + pad, y);
+					ctx.lineTo(x + width, y);
+					ctx.lineTo(x + width, y + height);
+					ctx.lineTo(x + pad, y + height);
+					ctx.lineTo(x, y + (height / 2));
+					ctx.fill();
+					ctx.stroke();
+					break;
+				default:
+					ctx.fillRect(x, y, width, height);
+					ctx.strokeRect(x, y, width, height);
+			}
+			ctx.save();
+			const font = doc.sheet.fonts[obj.font_id];
+			let emphasis = (font.bold ? "bold " : "") + (font.italic ? "italic " : "")
+			ctx.font = `${emphasis}s ${(font.size - 1)}px ${font.name}`;
+			ctx.fillStyle = this.#altiumColourToHex(obj.text_colour);
+			ctx.resetTransform();
+			ctx.textAlign = alignment; 
+			let text_x = (obj.side == 0) ? x+width+pad : x-pad
+			ctx.fillText(obj.name, text_x, canvas.height - y + 1);
+			ctx.restore();
+		}
+
 		for (let obj of doc.objects.filter((o) => o instanceof AltiumLine))
 		{
 			if (!this.#shouldShow(obj)) continue;
@@ -455,6 +523,9 @@ class AltiumSchematicRenderer
 			ctx.textBaseline = ["bottom", "bottom", "top", "top"][obj.orientation];
 			ctx.fillStyle = this.#altiumColourToHex(obj.colour);
 			ctx.save();
+			const font = doc.sheet.fonts[obj.font_id];
+			let emphasis = (font.bold ? "bold " : "") + (font.italic ? "italic " : "")
+			ctx.font = `${emphasis} ${(font.size - 1)}px ${font.name}`;
 			ctx.translate(obj.x, canvas.height - obj.y);
 			ctx.rotate(obj.orientation * -Math.PI/2);
 			ctx.fillText(obj.text, 0, 0);
