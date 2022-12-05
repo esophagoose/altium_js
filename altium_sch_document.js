@@ -116,6 +116,7 @@ class AltiumComponent extends AltiumObject
 		this.design_item_id = this.attributes.designitemid;
 		this.description = (this.attributes._utf8_componentdescription ?? this.attributes.componentdescription) ?? "";
 		this.current_part_id = Number.parseInt(this.attributes.currentpartid ?? "-1", 10);
+		this.display_mode = Number.parseInt(this.attributes.displaymode ?? -1, 10);;
 		this.part_count = Number.parseInt(this.attributes.partcount ?? "1", 10);
 	}
 }
@@ -131,6 +132,7 @@ class AltiumPin extends AltiumObject
 		this.x = Number.parseInt(this.attributes.location_x, 10);
 		this.y = Number.parseInt(this.attributes.location_y, 10);
 		this.length = Number.parseInt(this.attributes.pinlength, 10);
+		this.owner_display_mode = Number.parseInt(this.attributes.ownerpartdisplaymode ?? "-1", 10);
 		let conglomerate = Number.parseInt(this.attributes.pinconglomerate, 10);
 		this.orientation = conglomerate & 3;
 		this.angle = 90 * this.orientation;
@@ -173,7 +175,7 @@ class AltiumLabel extends AltiumObject
 		this.y = Number.parseInt(this.attributes.location_y, 10);
 		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10);
 		this.justification = Number.parseInt(this.attributes.justification ?? "0", 10);
-		this.font_id = this.attributes.fontid;
+		this.font_id = Number.parseInt(this.attributes.fontid ?? "-1", 10);
 	}
 }
 
@@ -314,8 +316,8 @@ class AltiumLine extends AltiumObject
 		super(record);
 		
 		this.x1 = Number.parseInt(this.attributes.location_x, 10);
-		this.y1 = Number.parseInt(this.attributes.corner_x, 10);
-		this.x2 = Number.parseInt(this.attributes.corner_y, 10);
+		this.x2 = Number.parseInt(this.attributes.corner_x, 10);
+		this.y1 = Number.parseInt(this.attributes.corner_y, 10);
 		this.y2 = Number.parseInt(this.attributes.location_y, 10);
 		this.width = Number.parseInt(this.attributes.linewidth ?? "1", 10);
 		this.colour = Number.parseInt(this.attributes.color ?? "0", 10);
@@ -336,7 +338,8 @@ class AltiumRectangle extends AltiumObject
 		this.bottom = Number.parseInt(this.attributes.location_y, 10);
 		this.line_colour = Number.parseInt(this.attributes.color, 10);
 		this.fill_colour = Number.parseInt(this.attributes.areacolor, 10);
-		this.transparent = (this.attributes.issolid ?? "F") != "T" || (this.attributes.transparent ?? "F") == "T";
+		this.owner_display_mode = Number.parseInt(this.attributes.ownerpartdisplaymode ?? "-1", 10);
+		this.transparent = ((this.attributes.issolid ?? "F") != "T" || (this.attributes.transparent ?? "F") == "T") && this.owner_display_mode < 1;
 	}
 }
 
@@ -353,6 +356,7 @@ class AltiumSheetSymbol extends AltiumObject
 		this.width = Number.parseInt(this.attributes.xsize, 10);
 		this.height = Number.parseInt(this.attributes.ysize, 10);
 		this.fill_colour = Number.parseInt(this.attributes.areacolor, 10);
+		this.line_colour = Number.parseInt(this.attributes.color, 10);
 	}
 }
 
@@ -375,6 +379,7 @@ class AltiumSheetEntry extends AltiumObject
 		this.text_colour = Number.parseInt(this.attributes.textcolor, 10);
 		this.fill_colour = Number.parseInt(this.attributes.areacolor, 10);
 		this.name = this.attributes.name;
+		this.type = this.attributes.arrowkind;
 	}
 }
 
@@ -405,6 +410,18 @@ class AltiumPort extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+
+		const styles = {"3": 0, "7": 1};
+		this.x = Number.parseInt(this.attributes.location_x, 10);
+		this.y = Number.parseInt(this.attributes.location_y, 10);
+		this.width = Number.parseInt(this.attributes.width, 10);
+		this.height = Number.parseInt(this.attributes.height, 10);
+		this.border_colour = Number.parseInt(this.attributes.color ?? "0", 10);
+		this.fill_colour = Number.parseInt(this.attributes.areacolor ?? "16777215", 10);
+		this.colour = Number.parseInt(this.attributes.textcolor ?? "0", 10);
+		this.text = this.attributes.name ?? "";
+		this.iotype = Number.parseInt(this.attributes.iotype ?? "0", 10);
+		this.orientation =  styles[this.attributes.style ?? "3"];
 	}
 }
 
@@ -415,6 +432,12 @@ class AltiumNoERC extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+
+		this.x = Number.parseInt(this.attributes.location_x, 10);
+		this.y = Number.parseInt(this.attributes.location_y, 10);
+		this.colour = Number.parseInt(this.attributes.color ?? "0", 10);
+		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10);
+		this.symbol = this.attributes.symbol;
 	}
 }
 
@@ -431,6 +454,7 @@ class AltiumNetLabel extends AltiumObject
 		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
 		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10);
 		this.justification = Number.parseInt(this.attributes.justification ?? "0", 10);
+		this.font_id = Number.parseInt(this.attributes.font_id ?? 1, 10);;
 	}
 }
 
@@ -441,6 +465,18 @@ class AltiumBus extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+
+		this.points = [];
+		let idx = 1;
+		while (this.attributes["x" + idx.toString()] != null)
+		{
+			let x = Number.parseInt(this.attributes["x" + idx.toString()], 10);
+			let y = Number.parseInt(this.attributes["y" + idx.toString()], 10);
+			this.points.push({ x: x, y: y });
+			idx++;
+		}
+		this.colour = Number.parseInt(this.attributes.color, 10);
+		this.line_width = Number.parseInt(this.attributes.linewidth, 10);
 	}
 }
 
@@ -471,6 +507,7 @@ class AltiumTextFrame extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+
 		this.left = Number.parseInt(this.attributes.location_x, 10);
 		this.bottom = Number.parseInt(this.attributes.location_y, 10);
 		this.right = Number.parseInt(this.attributes.corner_x, 10);
@@ -573,6 +610,36 @@ class AltiumSheet extends AltiumObject
 	}
 }
 
+class AltiumSheetName extends AltiumObject
+{
+	static { AltiumObject.RecordObjectMap.push({ id: 32, name: "SheetName", type: this }) }
+
+	constructor(record)
+	{
+		super(record);
+		this.x = Number.parseInt(this.attributes.location_x ?? "0", 10);
+		this.y = Number.parseInt(this.attributes.location_y ?? "0", 10);
+		this.colour = Number.parseInt(this.attributes.color ?? "0", 10);
+		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
+		this.font_id = Number.parseInt(this.attributes.fontid ?? 1, 10);;
+	}
+}
+
+class AltiumSheetFilename extends AltiumObject
+{
+	static { AltiumObject.RecordObjectMap.push({ id: 33, name: "SheetFilename", type: this }) }
+
+	constructor(record)
+	{
+		super(record);
+		this.x = Number.parseInt(this.attributes.location_x ?? "0", 10);
+		this.y = Number.parseInt(this.attributes.location_y ?? "0", 10);
+		this.colour = Number.parseInt(this.attributes.color ?? "0", 10);
+		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
+		this.font_id = Number.parseInt(this.attributes.fontid ?? 1, 10);;
+	}
+}
+
 class AltiumDesignator extends AltiumObject
 {
 	static { AltiumObject.RecordObjectMap.push({ id: 34, name: "Designator", type: this }) }
@@ -601,11 +668,13 @@ class AltiumDesignator extends AltiumObject
 		super(record);
 		this.x = Number.parseInt(this.attributes.location_x ?? "0", 10);
 		this.y = Number.parseInt(this.attributes.location_y ?? "0", 10);
-		this.colour = Number.parseInt(this.attributes.colour ?? "0", 10);
+		this.colour = Number.parseInt(this.attributes.color ?? "0", 10);
 		this.hidden = (this.attributes.ishidden ?? "") == "T";
 		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
 		this.mirrored = (this.attributes.ismirrored ?? "") == "T";
 		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10);
+		this.font_id = Number.parseInt(this.attributes.font_id ?? 1, 10);;
+		this.owner_display_mode = Number.parseInt(this.attributes.ownerpartdisplaymode ?? "-1", 10);
 	}
 }
 
@@ -623,11 +692,13 @@ class AltiumParameter extends AltiumObject
 		super(record);
 		this.x = Number.parseInt(this.attributes.location_x ?? "0", 10);
 		this.y = Number.parseInt(this.attributes.location_y ?? "0", 10);
-		this.colour = Number.parseInt(this.attributes.colour ?? "0", 10);
+		this.colour = Number.parseInt(this.attributes.color ?? "0", 10);
 		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
 		this.hidden = (this.attributes.ishidden ?? "") == "T";
 		this.mirrored = (this.attributes.ismirrored ?? "") == "T";
 		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10);
+		this.font_id = Number.parseInt(this.attributes.font_id ?? 1, 10);
+		this.owner_display_mode = Number.parseInt(this.attributes.ownerpartdisplaymode ?? "-1", 10);
 	}
 }
 
