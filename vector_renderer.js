@@ -164,7 +164,6 @@ class AltiumSchematicRenderer
 		
 		let sheetObject = doc.objects.find(o => o instanceof AltiumSheet);
 
-		area.node.style.backgroundColor = "#aaaaaa";
 		let sheet = doc.objects.find((o) => o instanceof AltiumSheet);
 		let scale = Math.min(area.height / sheet.height, area.width / sheet.width);
 		var frame = area.group().transform({scale: scale});
@@ -429,11 +428,12 @@ class AltiumSchematicRenderer
 							schematic.line(obj.x, obj.y, obj.x, obj.y + 10).stroke(style)
 							schematic.line(obj.x - 5, obj.y + 10, obj.x + 5, obj.y + 10).stroke(style)
 							break;
-						case 4:
-							schematic.line(obj.x - 10, obj.y, obj.x + 10, obj.y).stroke(style)
-							schematic.line(obj.x - 7.5, obj.y - 2, obj.x + 7.5, obj.y - 2).stroke(style)
-							schematic.line(obj.x - 5, obj.y - 4, obj.x + 5, obj.y - 4).stroke(style)
-							schematic.line(obj.x - 2.5, obj.y - 6, obj.x + 2.5, obj.y - 6).stroke(style)
+						case 4: // GND Symbol
+							schematic.line(obj.x, obj.y, obj.x, obj.y - 5).stroke(style)
+							schematic.line(obj.x - 11, obj.y - 5, obj.x + 11, obj.y - 5).stroke(style)
+							schematic.line(obj.x - 8, obj.y - 8, obj.x + 8, obj.y - 8).stroke(style)
+							schematic.line(obj.x - 5, obj.y - 11, obj.x + 5, obj.y - 11).stroke(style)
+							schematic.line(obj.x - 2, obj.y - 14, obj.x + 2, obj.y - 14).stroke(style)
 							break;
 						case 5:
 							let pts = [
@@ -488,23 +488,14 @@ class AltiumSchematicRenderer
 			{
 				if (obj.hidden || obj.is_implementation_parameter)
 					continue;
-				
-				const align = ["start", "start", "end", "end"][obj.justification];
-				const color  = obj.color;
-				const font = doc.sheet.fonts[obj.font_id];
-				const transform = JSON.parse(JSON.stringify(schematic.transform()));
-				const baseline = ["hanging", "hanging", "text-top", "text-top"][obj.orientation];
-				var text = schematic.text(obj.text).move(obj.x, obj.y)
-				text.font({ 
-					anchor: align,
-					fill: color,
-					family: font.name,
-					style: font.italic ? "italic " : "normal",
-					weight: font.bold ? "bold " : "normal",
-					size: font.size - 1
-				}).transform({rotate: -obj.orientation * 90 - 180, flip: "x"})
-				text.attr("dominant-baseline", baseline)
-				schematic.transform(transform)
+				if (obj.text.startsWith("=")) {
+					let key = obj.text.slice(1);
+					let parameter = doc.objects.find(x => (x.owner_record_index == obj.owner_record_index && x.name == key));
+					obj.text = parameter.text;
+				}
+				this.text(schematic, obj)
+				// const baseline = ["hanging", "hanging", "text-top", "text-top"][obj.orientation];
+				// text.attr("dominant-baseline", baseline)
 			}
 
 			else if (obj instanceof AltiumTextFrame)
@@ -517,6 +508,10 @@ class AltiumSchematicRenderer
 				 || obj instanceof AltiumComponent || obj instanceof AltiumSheet || obj instanceof AltiumTemplateFile) {}
 			else
 			{
+				if (obj.attributes_raw.length == 0) {
+					console.warn("Found empty record ...")
+					continue
+				}
 				console.error(`Unhandled object: ${obj.constructor.name}`)
 			}
 		}

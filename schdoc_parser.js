@@ -37,7 +37,7 @@ class AltiumRecord
 	
 	get attributes()
 	{
-		const regex = /(?:\|(?<name>[^|=]+?)=(?<value>[^|=]+))/gm;
+		const regex = /(?:\|(?<name>[^|=]+?)=(?<value>[^|]+))/gm;
 		let contents = this.string_contents;
 		return Array.from(contents.matchAll(regex), (m) => m.groups);
 	}
@@ -722,6 +722,7 @@ class AltiumParameter extends AltiumObject
 		this.x = Number.parseInt(this.attributes.location_x ?? "0", 10);
 		this.y = Number.parseInt(this.attributes.location_y ?? "0", 10);
 		this.color = this.colorToHTML(this.attributes.color);
+		this.name = (this.attributes.name) ?? "";
 		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
 		this.hidden = (this.attributes.ishidden ?? "") == "T";
 		this.mirrored = (this.attributes.ismirrored ?? "") == "T";
