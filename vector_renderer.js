@@ -115,7 +115,7 @@ class AltiumSchematicRenderer
 		  var start = polarToCartesian(x, y, radius, endAngle);
 		  var end = polarToCartesian(x, y, radius, startAngle);
 	  
-		  var largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+		  var largeArcFlag = 1 //endAngle - startAngle <= 180 ? "0" : "1";
 	  
 		  var d = [
 			  "M", start.x, start.y, 
@@ -144,17 +144,21 @@ class AltiumSchematicRenderer
 		const _flip = _angle > -270 ? "x" : "y";
 
 		// Apply font first so the text sizing is correct before the transform
-		var text_svg = base.text(_text).font({ 
+		var tgroup = base.group()
+		var text_svg = tgroup.text(_text).font({ 
 			fill: _color,
 			family: font.name,
 			style: font.italic ? "italic " : "normal",
 			weight: font.bold ? "bold " : "normal",
-			size: font.size - 1
+			size: font.size - 1,
 		})
+
 		// Move and then apply alignment
-		text_svg.move(obj.x, obj.y).font({anchor: _align});
-		text_svg.transform({rotate: _angle, origin: (obj.x, obj.y+font.size/2), flip: _flip})
-		
+		tgroup.move(obj.x, obj.y)
+		text_svg.font({anchor: _align}).transform({
+			rotate: _angle,
+			flip: _flip
+		})
 	}
 
 	render()
@@ -490,7 +494,7 @@ class AltiumSchematicRenderer
 					continue;
 				if (obj.text.startsWith("=")) {
 					let key = obj.text.slice(1);
-					let parameter = doc.objects.find(x => (x.owner_record_index == obj.owner_record_index && x.name == key));
+					let parameter = doc.objects.find(x => (x.owner_record_index == obj.owner_record_index && x.name.toLowerCase() == key.toLowerCase()));
 					obj.text = parameter.text;
 				}
 				this.text(schematic, obj)

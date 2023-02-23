@@ -564,6 +564,15 @@ class AltiumImage extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+		this.x = Number.parseInt(this.attributes.location_x, 10);
+		this.y = Number.parseInt(this.attributes.location_y, 10);
+		this.corner_x = Number.parseInt(this.attributes.corner_x, 10);
+		this.corner_y = Number.parseInt(this.attributes.corner_y, 10);
+		this.corner_x_frac = Number.parseInt(this.attributes.corner_x_frac, 10);
+		this.corner_y_frac = Number.parseInt(this.attributes.corner_y_frac, 10);
+		this.keep_aspect = (this.attributes.keepaspect ?? "F") == "T";
+		this.embedded = (this.attributes.embedimage ?? "F") == "T";
+		this.filename = this.attributes.filename;
 	}
 }
 
