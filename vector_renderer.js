@@ -287,6 +287,11 @@ class AltiumSchematicRenderer
 				var line = schematic.line(obj.x1, obj.y1, obj.x2, obj.y2)
 				line.stroke({ width: 1, color: obj.color })
 			}
+			else if (obj instanceof AltiumBusEntry)
+			{
+				var line = schematic.line(obj.x1, obj.y2, obj.x2, obj.y1)
+				line.stroke({ width: 1, color: obj.color })
+			}
 
 			else if (obj instanceof AltiumArc || obj instanceof AltiumEllipticalArc)
 			{
@@ -501,11 +506,17 @@ class AltiumSchematicRenderer
 				// const baseline = ["hanging", "hanging", "text-top", "text-top"][obj.orientation];
 				// text.attr("dominant-baseline", baseline)
 			}
-
 			else if (obj instanceof AltiumTextFrame)
 			{
 				console.warn("Skipping AltiumTextFrame");
 				continue;
+			}
+			else if (obj instanceof AltiumImage)
+			{
+				let width = obj.corner_x - obj.x;
+				let height = obj.corner_y - obj.y;
+				schematic.image(obj.filename).move(obj.x, obj.y)
+					.size(width, height).transform({flip: "y"})
 			}
 			else if (obj instanceof AltiumImplementation || obj instanceof AltiumImplementationParameterList
 				 || obj instanceof AltiumImplementationPinAssociation || obj instanceof AltiumImplementationList
@@ -516,7 +527,7 @@ class AltiumSchematicRenderer
 					console.warn("Found empty record ...")
 					continue
 				}
-				console.error(`Unhandled object: ${obj.constructor.name}`)
+				console.error(`Unhandled object: ${obj.constructor.name} ${obj.attributes["record"]}`)
 			}
 		}
 		const tx = (area.width - sheet.width * scale) / 2;
