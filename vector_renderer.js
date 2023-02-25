@@ -141,6 +141,7 @@ class AltiumSchematicRenderer
 		const _color = !color ? obj.color : color;
 		const _align = !alignment ? align : alignment;
 		const _angle = -obj.orientation * 90 - 180;
+		const _baseline = obj.baseline ?? "auto";
 		const _flip = _angle > -270 ? "x" : "y";
 
 		// Apply font first so the text sizing is correct before the transform
@@ -151,14 +152,14 @@ class AltiumSchematicRenderer
 			style: font.italic ? "italic " : "normal",
 			weight: font.bold ? "bold " : "normal",
 			size: font.size - 1,
-		})
+		});
 
 		// Move and then apply alignment
 		tgroup.move(obj.x, obj.y)
 		text_svg.font({anchor: _align}).transform({
 			rotate: _angle,
 			flip: _flip
-		})
+		}); // .attr({"dominant-baseline": _baseline})
 	}
 
 	render()
@@ -166,13 +167,12 @@ class AltiumSchematicRenderer
 		let area = this.render_area;
 		let doc = this.document;
 		
-		let sheetObject = doc.objects.find(o => o instanceof AltiumSheet);
-
 		let sheet = doc.objects.find((o) => o instanceof AltiumSheet);
 		let scale = Math.min(area.height / sheet.height, area.width / sheet.width);
 		var frame = area.group().transform({scale: scale});
-		frame.rect(sheet.width, sheet.height).fill(sheetObject.areacolor)
+		frame.rect(sheet.width, sheet.height).fill(sheet.areacolor)
 		var schematic = frame.group();
+		let last_harness = null;
 		schematic.transform({
 			translateY: sheet.height,
 			flip: "y"
@@ -427,24 +427,25 @@ class AltiumSchematicRenderer
 				const style = { width: 1, color: obj.color}
 				if (!obj.is_off_sheet_connector)
 				{
-					switch (obj.style)
+					switch (obj.style_name)
 					{
-						case 0:
+						case "DEFAULT":
 							schematic.line(obj.x, obj.y, obj.x, obj.y + 5).stroke(style)
 							schematic.circle(6).fill('none').stroke(style).move(obj.x - 3, obj.y + 5)
 							break
-						case 2:
+						case "BAR":
 							schematic.line(obj.x, obj.y, obj.x, obj.y + 10).stroke(style)
 							schematic.line(obj.x - 5, obj.y + 10, obj.x + 5, obj.y + 10).stroke(style)
 							break;
-						case 4: // GND Symbol
+						case "POWER_GND":
 							schematic.line(obj.x, obj.y, obj.x, obj.y - 5).stroke(style)
 							schematic.line(obj.x - 11, obj.y - 5, obj.x + 11, obj.y - 5).stroke(style)
 							schematic.line(obj.x - 8, obj.y - 8, obj.x + 8, obj.y - 8).stroke(style)
 							schematic.line(obj.x - 5, obj.y - 11, obj.x + 5, obj.y - 11).stroke(style)
 							schematic.line(obj.x - 2, obj.y - 14, obj.x + 2, obj.y - 14).stroke(style)
+							obj.y -= 14;
 							break;
-						case 5:
+						case "SIGNAL_GND":
 							let pts = [
 								[obj.x, obj.y],
 								[obj.x, obj.y - 5],
@@ -456,7 +457,7 @@ class AltiumSchematicRenderer
 
 							schematic.polyline(pts).fill('none').stroke(style);
 							break;
-						case 6:
+						case "EARTH":
 							schematic.line(obj.x, obj.y, obj.x, obj.y - 5).stroke(style)
 							schematic.line(obj.x - 5, obj.y - 5, obj.x + 5, obj.y - 5).stroke(style)
 
@@ -472,8 +473,10 @@ class AltiumSchematicRenderer
 					}
 					if (obj.show_text)
 					{
-						obj.y += [0, 12, 0, -12][obj.justification];
-						this.text(schematic, obj)
+						const font = this.document.sheet.fonts[obj.font_id ?? 1];
+						const scalar = (obj.orientation == 2) ? -1 : 1;
+						obj.y += scalar * (font.size + 2);
+						this.text(schematic, obj);
 					}
 				}
 				else
@@ -503,8 +506,6 @@ class AltiumSchematicRenderer
 					obj.text = parameter.text;
 				}
 				this.text(schematic, obj)
-				// const baseline = ["hanging", "hanging", "text-top", "text-top"][obj.orientation];
-				// text.attr("dominant-baseline", baseline)
 			}
 			else if (obj instanceof AltiumTextFrame)
 			{
@@ -517,6 +518,54 @@ class AltiumSchematicRenderer
 				let height = obj.corner_y - obj.y;
 				schematic.image(obj.filename).move(obj.x, obj.y)
 					.size(width, height).transform({flip: "y"})
+			}
+			else if (obj instanceof AltiumHarness)
+			{
+				const pad = obj.side == 0 ? 5 : -5; 
+				schematic.rect(obj.width - Math.abs(pad), obj.height).fill(obj.areacolor)
+					.move(obj.x + (obj.side == 0 ? 5 : 0), obj.y - obj.height);
+				const style = { width: obj.linewidth, color: obj.color };
+				const points = [
+					[obj.x + 2*pad, obj.y],
+					[obj.x + pad, obj.y],
+					[obj.x + pad, obj.y - obj.position + 5],
+					[obj.x, obj.y - obj.position],
+					[obj.x + pad, obj.y - obj.position - 5],
+					[obj.x + pad, obj.y - obj.height],
+					[obj.x + 2*pad, obj.y - obj.height]
+				];
+				if (obj.side == 1) {
+					for (let i = 0; i < points.length; i++) {
+						points[i][0] += obj.width;
+					}
+				}
+				schematic.polyline(points).fill(obj.areacolor).stroke(style);
+				last_harness = obj;
+			}
+			else if (obj instanceof AltiumHarnessPin)
+			{
+				const r = 3;
+				const font = this.document.sheet.fonts[obj.font_id ?? 1];
+				let text_pad = 3;
+				obj.x = last_harness.x - (r / 2);
+				if (obj.side == 1) {
+					obj.x += last_harness.width;
+					obj.justification = 2;
+					text_pad *= -1;
+				}
+				obj.y =  last_harness.y - obj.from_top - (r / 2);
+				schematic.circle(r).fill(obj.color).move(obj.x, obj.y)
+				obj.x += text_pad;
+				obj.y -= font.size / 2 - 1;
+				this.text(schematic, obj, obj.name, obj.textcolor)
+			}
+			else if (obj instanceof AltiumHarnessWire)
+			{
+				let style = {color: last_harness.areacolor, width: obj.width * 2, linecap: 'butt' };
+				const points = this.convertPoints(obj.points);
+				schematic.polyline(points).fill('none').stroke(style);
+				style = {color: obj.color, width: obj.width / 2, linecap: 'round' };
+				schematic.polyline(points).fill('none').stroke(style);
 			}
 			else if (obj instanceof AltiumImplementation || obj instanceof AltiumImplementationParameterList
 				 || obj instanceof AltiumImplementationPinAssociation || obj instanceof AltiumImplementationList
