@@ -567,6 +567,10 @@ class AltiumSchematicRenderer
 				style = {color: obj.color, width: obj.width / 2, linecap: 'round' };
 				schematic.polyline(points).fill('none').stroke(style);
 			}
+			else if (obj instanceof AltiumHarnessLabel)
+			{
+				this.text(schematic, obj);
+			}
 			else if (obj instanceof AltiumImplementation || obj instanceof AltiumImplementationParameterList
 				 || obj instanceof AltiumImplementationPinAssociation || obj instanceof AltiumImplementationList
 				 || obj instanceof AltiumComponent || obj instanceof AltiumSheet || obj instanceof AltiumTemplateFile) {}
