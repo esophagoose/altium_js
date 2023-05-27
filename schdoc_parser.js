@@ -336,8 +336,8 @@ class AltiumLine extends AltiumObject
 		
 		this.x1 = Number.parseInt(this.attributes.location_x, 10);
 		this.x2 = Number.parseInt(this.attributes.corner_x, 10);
-		this.y1 = Number.parseInt(this.attributes.corner_y, 10);
-		this.y2 = Number.parseInt(this.attributes.location_y, 10);
+		this.y1 = Number.parseInt(this.attributes.location_y, 10);
+		this.y2 = Number.parseInt(this.attributes.corner_y, 10);
 		this.width = Number.parseInt(this.attributes.linewidth ?? "1", 10);
 		this.color = this.colorToHTML(this.attributes.color);
 	}
@@ -408,15 +408,18 @@ class AltiumPowerPort extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+
+		const styleNames = ["DEFAULT", "ARROW", "BAR", "WAVE", "POWER_GND", "SIGNAL_GND", "EARTH", "GOST_ARROW", "GOST_POWER_GND", "GOST_EARTH", "GOST_BAR"];
+
 		this.x = Number.parseInt(this.attributes.location_x, 10);
 		this.y = Number.parseInt(this.attributes.location_y, 10);
 		this.color = this.colorToHTML(this.attributes.color);
 		this.show_text = (this.attributes.shownetname ?? "") == "T";
 		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
 		this.style = Number.parseInt(this.attributes.style ?? "0", 10);
-		const styleNames = ["DEFAULT", "ARROW", "BAR", "WAVE", "POWER_GND", "SIGNAL_GND", "EARTH", "GOST_ARROW", "GOST_POWER_GND", "GOST_EARTH", "GOST_BAR"];
 		this.style_name = (this.style < 0 || this.style > styleNames.length-1) ? "UNKNOWN" : styleNames[this.style];
-		this.justification = Number.parseInt(this.attributes.orientation ?? "0", 10);
+		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10) - 1;
+		this.justification = Number.parseInt(this.attributes.justification ?? "1", 10);
 		this.is_off_sheet_connector = (this.attributes.iscrosssheetconnector ?? "") == "T";
 	}
 }
@@ -706,6 +709,23 @@ class AltiumDesignator extends AltiumObject
 	}
 }
 
+class AltiumBusEntry extends AltiumObject
+{
+	static { AltiumObject.RecordObjectMap.push({ id: 37, name: "Line", type: this }) }
+	
+	constructor(record)
+	{
+		super(record);
+		
+		this.x1 = Number.parseInt(this.attributes.location_x, 10);
+		this.x2 = Number.parseInt(this.attributes.corner_x, 10);
+		this.y1 = Number.parseInt(this.attributes.corner_y, 10);
+		this.y2 = Number.parseInt(this.attributes.location_y, 10);
+		this.width = Number.parseInt(this.attributes.linewidth ?? "1", 10);
+		this.color = this.colorToHTML(this.attributes.color);
+	}
+}
+
 class AltiumTemplateFile extends AltiumObject
 {
 	static { AltiumObject.RecordObjectMap.push({ id: 39, name: "TemplateFile", type: this }) }
@@ -733,7 +753,7 @@ class AltiumParameter extends AltiumObject
 		this.color = this.colorToHTML(this.attributes.color);
 		this.name = (this.attributes.name) ?? "";
 		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
-		this.hidden = (this.attributes.ishidden ?? "") == "T";
+		this.hidden = (this.attributes.ishidden ?? "") == "T" || (this.attributes.name ?? "") == "HiddenNetName";
 		this.mirrored = (this.attributes.ismirrored ?? "") == "T";
 		this.orientation = Number.parseInt(this.attributes.orientation ?? "0", 10);
 		this.font_id = Number.parseInt(this.attributes.font_id ?? 1, 10);
@@ -805,6 +825,85 @@ class AltiumImplementationParameterList extends AltiumObject
 	constructor(record)
 	{
 		super(record);
+	}
+}
+
+class AltiumHarness extends AltiumObject
+{
+	static { AltiumObject.RecordObjectMap.push({ id: 215, name: "Harness", type: this }) }
+	
+	constructor(record)
+	{
+		super(record);
+
+		this.x = Number.parseInt(this.attributes.location_x, 10);
+		this.y = Number.parseInt(this.attributes.location_y, 10);
+		this.width = Number.parseInt(this.attributes.xsize, 10);
+		this.height = Number.parseInt(this.attributes.ysize, 10);
+		this.linewidth = Number.parseInt(this.attributes.linewidth, 10);
+		this.side = Number.parseInt(this.attributes.harnessconnectorside ?? "0", 10);
+		this.color = this.colorToHTML(this.attributes.color);
+		this.areacolor = this.colorToHTML(this.attributes.areacolor);
+		this.position = Number.parseInt(this.attributes.primaryconnectionposition, 10);
+	}
+}
+
+class AltiumHarnessPin extends AltiumObject
+{
+	static { AltiumObject.RecordObjectMap.push({ id: 216, name: "Harness Pin", type: this }) }
+	
+	constructor(record)
+	{
+		super(record);
+
+		this.side = Number.parseInt(this.attributes.side, 10);
+		this.from_top = 10 * Number.parseInt(this.attributes.distancefromtop ?? "0", 10);
+		let from_top_frac = Number.parseInt(this.attributes.distancefromtop_frac1, 10);
+		this.from_top += (from_top_frac / 100_000);
+		this.color = this.colorToHTML(this.attributes.color);
+		this.areacolor = this.colorToHTML(this.attributes.areacolor);
+		this.textcolor = this.colorToHTML(this.attributes.textcolor);
+		this.font_id = Number.parseInt(this.attributes.textfontid ?? "-1", 10);
+		this.text_style = this.attributes.textstyle;
+		this.name = this.attributes.name;
+	}
+}
+
+class AltiumHarnessLabel extends AltiumObject
+{
+	static { AltiumObject.RecordObjectMap.push({ id: 217, name: "Harness Label", type: this }) }
+	
+	constructor(record)
+	{
+		super(record);
+
+		this.x = Number.parseInt(this.attributes.location_x, 10);
+		this.y = Number.parseInt(this.attributes.location_y, 10);
+		this.text = this.attributes.text;
+		this.color = this.colorToHTML(this.attributes.color);
+		this.font_id = Number.parseInt(this.attributes.fontid ?? "-1", 10);
+	}
+}
+
+class AltiumHarnessWire extends AltiumObject
+{
+	static { AltiumObject.RecordObjectMap.push({ id: 218, name: "Harness Wire", type: this }) }
+	
+	constructor(record)
+	{
+		super(record);
+
+		this.points = [];
+		let idx = 1;
+		while (this.attributes["x" + idx.toString()] != null)
+		{
+			let x = Number.parseInt(this.attributes["x" + idx.toString()], 10);
+			let y = Number.parseInt(this.attributes["y" + idx.toString()], 10);
+			this.points.push({ x: x, y: y });
+			idx++;
+		}
+		this.color = this.colorToHTML(this.attributes.color);
+		this.width = Number.parseInt(this.attributes.linewidth, 10);
 	}
 }
 
