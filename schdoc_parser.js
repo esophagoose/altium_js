@@ -27,45 +27,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 class AltiumRecord
 {
-	static #stringDecoder = new TextDecoder('utf-8');
-	static get StringDecoder() { return AltiumRecord.#stringDecoder; }
-	
-	get string_contents()
+	constructor(record_id, data_block, index)
 	{
-		return AltiumRecord.StringDecoder.decode(this.data).slice(0, -1);
-	}
-	
-	get attributes()
-	{
-		const regex = /(?:\|(?<name>[^|=]+?)=(?<value>[^|]+))/gm;
-		let contents = this.string_contents;
-		return Array.from(contents.matchAll(regex), (m) => m.groups);
-	}
-	
-	constructor(stream, index)
-	{
+		this.record_id = record_id
 		this.record_index = index;
-		this.stream = stream;
-		this.position = stream.u8stream_position;
-		this.payload_length = stream.read_u16_le();
-		this.padding = stream.read_u8();
-		if (this.padding != 0)
-			console.warn("Padding byte on record index " + index.toString() + " was non-zero.");
-		this.record_type = stream.read_u8();
-		if (this.record_type != 0)
-			throw new Error("Invalid record type.");
-		this.data = stream.read(this.payload_length);
-		this.record_id = -1;
-		if (this.data.length > "|RECORD=255|".length)
-		{
-			// check if this starts with |RECORD=
-			if (this.data.compare_to(new Uint8Array([0x7c, 0x52, 0x45, 0x43, 0x4f, 0x52, 0x44, 0x3d])))
-			{
-				let recordFieldStr = AltiumRecord.StringDecoder.decode(this.data.slice(8, 12));
-				let recordIdStr = recordFieldStr.split('|')[0];
-				this.record_id = Number.parseInt(recordIdStr, 10);
-			}
-		}
+		this.data = data_block;
+
+		const regex = /(?:\|(?<name>[^|=]+?)=(?<value>[^|]+))/gm;
+		this.attributes = Array.from(this.data.matchAll(regex), (m) => m.groups);
 	}
 }
 
@@ -909,25 +878,24 @@ class AltiumHarnessWire extends AltiumObject
 
 class AltiumDocument
 {
-	constructor(stream)
+
+	static #stringDecoder = new TextDecoder('utf-8');
+	static get StringDecoder() { return AltiumDocument.#stringDecoder; }
+
+	constructor(data_source)
 	{
-		const min_record_size = 4
-		this.stream = stream;
 		this.records = [];
-		let index = -1; // header comes first, so give it an index of -1
-		while (this.stream.u8stream_position + min_record_size < this.stream.length)
-		{
-			this.records.push(new AltiumRecord(this.stream, index));
-			index++;
-		}
 		this.objects = [];
+		this.source = data_source;
+		this.record_object_lookup = {};
+        if (typeof(this.source[0]) == "number")
+			this.from_stream();
+		else
+			this.from_records_list();
+
 		let record_object_lookup = {};
 		for (let record of this.records)
-		{
-			// skip the header object
-			if (record.record_index < 0)
-				continue;
-			
+		{			
 			let mapping = AltiumObject.RecordObjectMap.find((rom) => rom.id == record.record_id);
 			let recordObject = null;
 			if (mapping != null)
@@ -955,8 +923,48 @@ class AltiumDocument
 			ownerObject.child_objects.push(object);
 		}
 		this.record_object_lookup = record_object_lookup;
-		
 		this.sheet = this.objects.find(o => o instanceof AltiumSheet);
+	}
+
+	from_records_list()
+	{
+		let index = 0;
+		for (const block of document)
+		{
+			if (!block.startsWith("|RECORD="))
+				continue;
+			let id = block.slice("|RECORD=".length).split("|")[0];
+			let record_id = parseInt(id);
+			this.records.push(new AltiumRecord(record_id, block, index));
+			index++;
+		}
+	}
+
+	from_stream()
+	{
+		const min_record_size = 4
+		let index = -1; // header comes first, so give it an index of -1
+		while (this.source.u8stream_position + min_record_size < this.source.length)
+		{
+			let payload_length = this.source.read_u16_le();
+			let padding = this.source.read_u8();
+			if (padding != 0)
+				console.warn("Padding byte on record index " + index.toString() + " was non-zero.");
+			let record_type = this.source.read_u8();
+			if (record_type != 0)
+				throw new Error("Invalid record type.");
+			let data = this.source.read(payload_length);
+			// check if this starts with |RECORD=
+			if (data.compare_to(new Uint8Array([0x7c, 0x52, 0x45, 0x43, 0x4f, 0x52, 0x44, 0x3d])))
+			{
+				let recordFieldStr = AltiumDocument.StringDecoder.decode(data.slice(8, 12));
+				let recordIdStr = recordFieldStr.split('|')[0];
+				let record_id = Number.parseInt(recordIdStr, 10);
+				let block = AltiumDocument.StringDecoder.decode(data).slice(0, -1);
+				this.records.push(new AltiumRecord(record_id, block, index));
+				index++;
+			}
+		}
 	}
 	
 	object_from_record_index(index)
