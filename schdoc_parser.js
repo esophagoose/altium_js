@@ -929,7 +929,7 @@ class AltiumDocument
 	from_records_list()
 	{
 		let index = 0;
-		for (const block of document)
+		for (const block of this.source)
 		{
 			if (!block.startsWith("|RECORD="))
 				continue;
