@@ -145,7 +145,7 @@ class AltiumSchematicRenderer
 		const _flip = _angle > -270 ? "x" : "y";
 
 		// Apply font first so the text sizing is correct before the transform
-		var tgroup = base.group()
+		var tgroup = base.group().addClass(`text-${obj.record_index}`)
 		var text_svg = tgroup.text(_text).font({ 
 			fill: _color,
 			family: font.name,
@@ -202,19 +202,12 @@ class AltiumSchematicRenderer
 		
 			else if (obj instanceof AltiumTextFrame)
 			{
-				console.warn("Skipped AltiumTextFrame")
-				continue
-				
-				if (!obj.transparent)
-				{
-					ctx.fillStyle = obj.fill_color;
-					ctx.fillRect(obj.left, obj.top, obj.right - obj.left, obj.bottom - obj.top);
-				}
-				if (obj.show_border)
-				{
-					ctx.strokeStyle = obj.border_color;
-					ctx.strokeRect(obj.left, obj.top, obj.right - obj.left, obj.bottom - obj.top);
-				}
+				var rect = schematic.rect(obj.right - obj.left, obj.top - obj.bottom)
+				const fill = (!obj.transparent) ? obj.fill_color : 'none';
+				const stroke = (obj.show_border) ? obj.border_color : 'none';
+				rect.fill(fill).stroke(stroke)
+				rect.move(obj.left, obj.bottom)
+				// this.text(schematic, obj)
 			}
 
 			else if (obj instanceof AltiumEllipse)
@@ -256,7 +249,7 @@ class AltiumSchematicRenderer
 			{
 				const x = obj.x + obj.angle_vec[0] * obj.length
 				const y = obj.y + obj.angle_vec[1] * obj.length
-				schematic.line(obj.x, obj.y, x, y).stroke({ width: 1, color: "black" })
+				schematic.line(obj.x, obj.y, x, y).stroke({ width: 1, color: "black" }).addClass(`pin-${obj.record_index}`)
 
 				if (!obj.show_name)
 					continue;
@@ -286,6 +279,7 @@ class AltiumSchematicRenderer
 			{
 				var line = schematic.line(obj.x1, obj.y1, obj.x2, obj.y2)
 				line.stroke({ width: 1, color: obj.color })
+				line.addClass(`record-${obj.record_index}`)
 			}
 			else if (obj instanceof AltiumBusEntry)
 			{
@@ -315,7 +309,7 @@ class AltiumSchematicRenderer
 				const color = obj.color;
 				const fill_color = obj.color;
 				let style = {color: color, width: obj.width}
-				schematic.polyline(obj.points).fill('none').stroke(style)
+				schematic.polyline(obj.points).fill('none').stroke(style).addClass(`record-${obj.record_index}`)
 				
 				let shapeSize = obj.shape_size + 1;
 				if (obj.start_shape > 0)
@@ -462,9 +456,7 @@ class AltiumSchematicRenderer
 							schematic.line(obj.x - 5, obj.y - 5, obj.x + 5, obj.y - 5).stroke(style)
 
 							for (let g = -1; g < 2; g++)
-							{
 								schematic.line(obj.x + (g * 5), obj.y - 5, obj.x + (g * 5) - 3, obj.y - 10).stroke(style)
-							}
 							break;
 						default:
 							console.warn("AltiumPowerPort: Unknown symbol type!")
@@ -506,11 +498,6 @@ class AltiumSchematicRenderer
 					obj.text = parameter.text;
 				}
 				this.text(schematic, obj)
-			}
-			else if (obj instanceof AltiumTextFrame)
-			{
-				console.warn("Skipping AltiumTextFrame");
-				continue;
 			}
 			else if (obj instanceof AltiumImage)
 			{
