@@ -44,6 +44,7 @@ class AltiumObject
 	
 	constructor(record)
 	{
+		this.record_id = record.record_id;
 		this.record_index = record.record_index;
 		this.source_record = record;
 		this.attributes_raw = record.attributes;

@@ -178,10 +178,10 @@ class AltiumSchematicRenderer
 			flip: "y"
 		});
 
-		for (let obj of doc.objects)
+		for (let obj of doc.objects.sort((a, b) => b.record_id - a.record_id))
 		{
 			if (!this.#shouldShow(obj)) continue;
-			
+
 			if (obj instanceof AltiumWire || obj instanceof AltiumBus) 
 			{
 				let style = {
@@ -195,7 +195,7 @@ class AltiumSchematicRenderer
 			else if (obj instanceof AltiumRectangle)
 			{
 				var rect = schematic.rect(obj.right - obj.left, obj.top - obj.bottom)
-				const c = (!obj.transparent) ? obj.fill_color : 'none';
+				const c = (!obj.transparent) ? obj.fill_color : '#ffffdb';
 				rect.fill(c).stroke(obj.line_color)
 				rect.move(obj.left, obj.bottom)
 			}
