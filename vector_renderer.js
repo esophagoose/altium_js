@@ -227,7 +227,7 @@ class AltiumSchematicRenderer
 				const stroke = (obj.show_border) ? obj.border_color : 'none';
 				rect.fill(fill).stroke(stroke)
 				rect.move(obj.left, obj.bottom)
-				// this.text(schematic, obj)
+				this.text(schematic, obj)
 			}
 
 			else if (obj instanceof AltiumEllipse)
