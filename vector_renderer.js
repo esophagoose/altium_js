@@ -521,7 +521,7 @@ class AltiumSchematicRenderer
 					continue;
 				if (obj.text.startsWith("=")) {
 					let key = obj.text.slice(1);
-					let parameter = doc.objects.find(x => (x.owner_record_index == obj.owner_record_index && x.name.toLowerCase() == key.toLowerCase()));
+					let parameter = doc.objects.find(x => (x.owner_record_index == obj.owner_record_index && (x.name ?? "").toLowerCase() == key.toLowerCase()));
 					obj.text = parameter.text;
 				}
 				this.text(schematic, obj)
