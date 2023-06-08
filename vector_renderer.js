@@ -170,9 +170,14 @@ class AltiumSchematicRenderer
 		let sheet = doc.objects.find((o) => o instanceof AltiumSheet);
 		let scale = Math.min(area.height / sheet.height, area.width / sheet.width);
 		var frame = area.group().transform({scale: scale});
-		frame.rect(sheet.width, sheet.height).fill(sheet.areacolor)
+		let background = frame.rect(sheet.width, sheet.height).fill(sheet.areacolor)
+		if (true) {
+			let style = {color: "black", width: 1};
+			background.stroke(style);
+
+			frame.rect(sheet.width-40, sheet.height-40).move(20, 20).fill('none').stroke(style);
+		}
 		var schematic = frame.group();
-		let last_harness = null;
 		schematic.transform({
 			translateY: sheet.height,
 			flip: "y"
@@ -527,20 +532,19 @@ class AltiumSchematicRenderer
 					}
 				}
 				schematic.polyline(points).fill(obj.areacolor).stroke(style);
-				last_harness = obj;
 			}
 			else if (obj instanceof AltiumHarnessPin)
 			{
 				const r = 3;
 				const font = this.document.sheet.fonts[obj.font_id ?? 1];
 				let text_pad = 3;
-				obj.x = last_harness.x - (r / 2);
+				obj.x = obj.parent.x - (r / 2);
 				if (obj.side == 1) {
-					obj.x += last_harness.width;
+					obj.x += obj.parent.width;
 					obj.justification = 2;
 					text_pad *= -1;
 				}
-				obj.y =  last_harness.y - obj.from_top - (r / 2);
+				obj.y =  obj.parent.y - obj.from_top - (r / 2);
 				schematic.circle(r).fill(obj.color).move(obj.x, obj.y)
 				obj.x += text_pad;
 				obj.y -= font.size / 2 - 1;
@@ -548,7 +552,7 @@ class AltiumSchematicRenderer
 			}
 			else if (obj instanceof AltiumHarnessWire)
 			{
-				let style = {color: last_harness.areacolor, width: obj.width * 2, linecap: 'butt' };
+				let style = {color: obj.parent.areacolor, width: obj.width * 2, linecap: 'butt' };
 				const points = this.convertPoints(obj.points);
 				schematic.polyline(points).fill('none').stroke(style);
 				style = {color: obj.color, width: obj.width / 2, linecap: 'round' };

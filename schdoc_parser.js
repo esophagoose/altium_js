@@ -186,7 +186,7 @@ class AltiumPolyline extends AltiumObject
 			this.points.push([x,y]);
 			idx++;
 		}
-		this.width = Number.parseInt(this.attributes.linewidth ?? "0", 10);
+		this.width = Number.parseInt(this.attributes.linewidth ?? "1", 10);
 		this.color = this.colorToHTML(this.attributes.color);
 		this.start_shape = Number.parseInt(this.attributes.startlineshape ?? "0", 10);
 		this.end_shape = Number.parseInt(this.attributes.endlineshape ?? "0", 10);
@@ -913,8 +913,13 @@ class AltiumDocument
 			this.objects.push(recordObject);
 			record_object_lookup[record.record_index] = recordObject;
 		}
+		let last_harness = null;
 		for (let object of this.objects)
 		{
+			if (object instanceof AltiumHarness)
+				last_harness = object;
+			if (object instanceof AltiumHarnessWire || object instanceof AltiumHarnessPin)
+				object.parent = last_harness
 			if (object.owner_record_index < 0)
 				continue;
 			let ownerObject = record_object_lookup[object.owner_record_index];
