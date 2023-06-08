@@ -141,7 +141,7 @@ class AltiumSchematicRenderer
 
 	text(base, obj, text="", color="", alignment="")
 	{
-		const align = ["start", "middle", "end"][obj.justification];
+		const align = ["start", "middle", "end"][obj.justification % 3];
 		const font = this.document.sheet.fonts[obj.font_id ?? 1];
 		const _text = !text ? obj.text : text;
 		const _color = !color ? obj.color : color;
@@ -166,6 +166,18 @@ class AltiumSchematicRenderer
 			rotate: _angle,
 			flip: _flip
 		}); // .attr({"dominant-baseline": _baseline})
+	}
+
+	multilineText(base, obj, width, height)
+	{
+		const align = ["left", "middle", "right"][obj.justification ?? 0 % 3];
+		const font = this.document.sheet.fonts[obj.font_id ?? 1];
+		const color = obj.color ?? "black";
+		let font_style = `text-align:${align};font-family:${font.name};font-size:${font.size-1}px`;
+		let style = `color:${color};transform:scale(1,-1);${font_style}`;
+		let content = `<p style="${style}">${obj.text}</p>`;
+
+		base.foreignObject(width, height).add(content).move(obj.x, obj.y);
 	}
 
 	get_order(obj)
@@ -222,12 +234,15 @@ class AltiumSchematicRenderer
 		
 			else if (obj instanceof AltiumTextFrame)
 			{
-				var rect = schematic.rect(obj.right - obj.left, obj.top - obj.bottom)
+				let width = obj.right - obj.left;
+				let height = obj.top - obj.bottom;
+				obj.x = obj.left;
+				obj.y = obj.bottom;
 				const fill = (!obj.transparent) ? obj.fill_color : 'none';
 				const stroke = (obj.show_border) ? obj.border_color : 'none';
-				rect.fill(fill).stroke(stroke)
+				var rect = schematic.rect(width, height).fill(fill).stroke(stroke);
 				rect.move(obj.left, obj.bottom)
-				this.text(schematic, obj)
+				this.multilineText(schematic, obj, width, height)
 			}
 
 			else if (obj instanceof AltiumEllipse)

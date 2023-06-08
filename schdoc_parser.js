@@ -828,7 +828,7 @@ class AltiumHarnessPin extends AltiumObject
 
 		this.side = Number.parseInt(this.attributes.side, 10);
 		this.from_top = 10 * Number.parseInt(this.attributes.distancefromtop ?? "0", 10);
-		let from_top_frac = Number.parseInt(this.attributes.distancefromtop_frac1, 10);
+		let from_top_frac = Number.parseInt(this.attributes.distancefromtop_frac1 ?? "0", 10);
 		this.from_top += (from_top_frac / 100_000);
 		this.color = this.colorToHTML(this.attributes.color);
 		this.areacolor = this.colorToHTML(this.attributes.areacolor);
