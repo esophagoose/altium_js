@@ -25,6 +25,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 */
 
+RENDER_ORDER = {
+	'AltiumHarness': 0,
+	'AltiumSheetSymbol': 0,
+	'AltiumRectangle': 0
+}
 
 class AltiumSchematicRenderer
 {
@@ -163,6 +168,11 @@ class AltiumSchematicRenderer
 		}); // .attr({"dominant-baseline": _baseline})
 	}
 
+	get_order(obj)
+	{
+		return RENDER_ORDER[obj.constructor.name] ?? 1
+	}
+
 	render()
 	{
 		let area = this.render_area;
@@ -188,7 +198,7 @@ class AltiumSchematicRenderer
 			flip: "y"
 		});
 
-		for (let obj of doc.objects.sort((a, b) => b.record_id - a.record_id))
+		for (let obj of doc.objects.sort((a, b) => this.get_order(a) - this.get_order(b)))
 		{
 			if (!this.#shouldShow(obj)) continue;
 
