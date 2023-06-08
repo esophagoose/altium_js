@@ -32,6 +32,7 @@ class AltiumSchematicRenderer
 	{
 		this.render_area = render_area;
 		this.document = document;
+		this.parameters = [];
 	}
 	
 	#shouldShow(object)
@@ -177,6 +178,10 @@ class AltiumSchematicRenderer
 
 			frame.rect(sheet.width-40, sheet.height-40).move(20, 20).fill('none').stroke(style);
 		}
+		// Save sheet variables
+		let parameters = altiumDocument.objects.filter((o) => o instanceof AltiumParameter);
+		this.parameters = parameters.filter((o) => o.parent_object == null)
+		this.parameters.forEach((o) => o.name = o.name.toLowerCase())
 		var schematic = frame.group();
 		schematic.transform({
 			translateY: sheet.height,
@@ -482,8 +487,15 @@ class AltiumSchematicRenderer
 				}
 			}
 		
-			else if (obj instanceof AltiumSheetFilename || obj instanceof AltiumLabel || obj instanceof AltiumNetLabel)
+			else if (obj instanceof AltiumSheetFilename || obj instanceof AltiumSheetName || obj instanceof AltiumLabel || obj instanceof AltiumNetLabel)
 			{
+				if (obj.text.startsWith('='))
+				{
+					let text = obj.text.slice(1).toLowerCase();
+					let param = this.parameters.find(x => x.name == text);
+					if (param !== undefined)
+						obj.text = param.text;
+				}
 				this.text(schematic, obj);
 			}
 
