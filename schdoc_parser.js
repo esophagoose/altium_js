@@ -83,6 +83,13 @@ class AltiumObject
 		let high_byte = ((color >> 16) & 0xFF).toString(16).padStart(2, '0');
 		return `#${low_byte}${mid_byte}${high_byte}`
 	}
+
+	parseIntAndFloat(attrs, name)
+	{
+		let base = Number.parseInt(attrs[name], 10);
+		let frac = Number.parseInt(attrs[`${name}_frac`] ?? "0", 10);
+		return base + (frac / 100_000);
+	}
 }
 
 class AltiumComponent extends AltiumObject
@@ -304,10 +311,10 @@ class AltiumLine extends AltiumObject
 	{
 		super(record);
 		
-		this.x1 = Number.parseInt(this.attributes.location_x, 10);
-		this.x2 = Number.parseInt(this.attributes.corner_x, 10);
-		this.y1 = Number.parseInt(this.attributes.location_y, 10);
-		this.y2 = Number.parseInt(this.attributes.corner_y, 10);
+		this.x1 = this.parseIntAndFloat(this.attributes, 'location_x');
+		this.x2 = this.parseIntAndFloat(this.attributes, 'corner_x');
+		this.y1 = this.parseIntAndFloat(this.attributes, 'location_y');
+		this.y2 = this.parseIntAndFloat(this.attributes, 'corner_y');
 		this.width = Number.parseInt(this.attributes.linewidth ?? "1", 10);
 		this.color = this.colorToHTML(this.attributes.color);
 	}

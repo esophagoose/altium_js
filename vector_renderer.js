@@ -38,6 +38,7 @@ class AltiumSchematicRenderer
 		this.render_area = render_area;
 		this.document = document;
 		this.parameters = [];
+		this.schematic = null;
 	}
 	
 	#shouldShow(object)
@@ -226,10 +227,10 @@ class AltiumSchematicRenderer
 
 			else if (obj instanceof AltiumRectangle)
 			{
-				var rect = schematic.rect(obj.right - obj.left, obj.top - obj.bottom)
+				obj.svg = schematic.rect(obj.right - obj.left, obj.top - obj.bottom)
 				const c = (!obj.transparent) ? obj.fill_color : '#ffffdb';
-				rect.fill(c).stroke(obj.line_color)
-				rect.move(obj.left, obj.bottom)
+				obj.svg.fill(c).stroke(obj.line_color)
+				obj.svg.move(obj.left, obj.bottom)
 			}
 		
 			else if (obj instanceof AltiumTextFrame)
@@ -611,6 +612,7 @@ class AltiumSchematicRenderer
 				console.error(`Unhandled object: ${obj.constructor.name} ${obj.attributes["record"]}`)
 			}
 		}
+		this.schematic = schematic;
 		const tx = (area.width - sheet.width * scale) / 2;
 		const ty = (area.height - sheet.height * scale) / 2;
 		frame.transform({
@@ -620,5 +622,27 @@ class AltiumSchematicRenderer
 			translateX: tx,
 			translateY: ty
 		})
+	}
+
+
+
+	crossOutRefDes(refdes)
+	{
+		let results = this.document.objects.filter(x => {
+			return x instanceof AltiumDesignator && x.text == refdes
+		});
+		if (results.length === 0)
+			return
+		let component = results[0].parent_object;
+		component.child_objects.filter(x => x instanceof AltiumRectangle).forEach(r => {
+			r.svg.fill("#eee").stroke("#aaa");
+			this.schematic.line(r.left, r.top, r.right, r.bottom).stroke({ width: 4, color: "red" })
+			this.schematic.line(r.right, r.top, r.left, r.bottom).stroke({ width: 4, color: "red" })
+		})
+	}
+
+	handleVariation(variation)
+	{
+
 	}
 }
