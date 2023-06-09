@@ -515,7 +515,7 @@ class AltiumSchematicRenderer
 		
 			else if (obj instanceof AltiumSheetFilename || obj instanceof AltiumSheetName || obj instanceof AltiumLabel || obj instanceof AltiumNetLabel)
 			{
-				if (obj.text.startsWith('='))
+				if ((obj.text ?? "").startsWith('='))
 				{
 					let text = obj.text.slice(1).toLowerCase();
 					let param = this.parameters.find(x => x.name == text);
