@@ -167,6 +167,7 @@ class AltiumSchematicRenderer
 			rotate: _angle,
 			flip: _flip
 		}); // .attr({"dominant-baseline": _baseline})
+		obj.svg = text_svg;
 	}
 
 	multilineText(base, obj, width, height)
@@ -250,7 +251,8 @@ class AltiumSchematicRenderer
 			{
 				const parsed_fill_color = obj.fill_color;
 				const fill_color = (!obj.transparent) ? parsed_fill_color : 'none';
-				var circle = schematic.ellipse(0, 0).radius(obj.radius_x, obj.radius_y).move(obj.x, obj.y);
+				var circle = schematic.ellipse(0, 0).radius(obj.radius_x, obj.radius_y);
+				circle.move(obj.x-obj.radius_x, obj.y-obj.radius_y);
 				circle.fill(fill_color).stroke(obj.line_color)
 			}
 
@@ -316,6 +318,7 @@ class AltiumSchematicRenderer
 				var line = schematic.line(obj.x1, obj.y1, obj.x2, obj.y2)
 				line.stroke({ width: 1, color: obj.color })
 				line.addClass(`record-${obj.record_index}`)
+				obj.svg = line;
 			}
 			else if (obj instanceof AltiumBusEntry)
 			{
@@ -609,7 +612,7 @@ class AltiumSchematicRenderer
 					console.warn("Found empty record ...")
 					continue
 				}
-				console.error(`Unhandled object: ${obj.constructor.name} ${obj.attributes["record"]}`)
+				console.warn(`Unhandled object: ${obj.constructor.name} ${obj.attributes["record"]}`)
 			}
 		}
 		this.schematic = schematic;
@@ -634,11 +637,33 @@ class AltiumSchematicRenderer
 		if (results.length === 0)
 			return
 		let component = results[0].parent_object;
+		var min_x = 9999;
+		var max_x = 0;
+		var min_y = 9999;
+		var max_y = 0;
 		component.child_objects.filter(x => x instanceof AltiumRectangle).forEach(r => {
 			r.svg.fill("#eee").stroke("#aaa");
-			this.schematic.line(r.left, r.top, r.right, r.bottom).stroke({ width: 4, color: "red" })
-			this.schematic.line(r.right, r.top, r.left, r.bottom).stroke({ width: 4, color: "red" })
+			min_x = Math.min(min_x, r.left, r.right);
+			max_x = Math.max(max_x, r.left, r.right);
+			min_y = Math.min(min_y, r.top, r.bottom);
+			max_y = Math.max(max_y, r.top, r.bottom);
 		})
+		component.child_objects.filter(x => x instanceof AltiumLine).forEach(r => {
+			r.svg.stroke("#aaa");
+			min_x = Math.min(min_x, r.x1, r.x2);
+			max_x = Math.max(max_x, r.x1, r.x2);
+			min_y = Math.min(min_y, r.y1, r.y2);
+			max_y = Math.max(max_y, r.y1, r.y2);
+		})
+		component.child_objects.filter(x => (x instanceof AltiumParameter || x instanceof AltiumDesignator) && x.svg).forEach(r => {
+			r.svg.font({fill: "#aaa"})
+		})
+
+		if (min_x == 9999 || min_y == 9999)
+			return
+		let style = { width: 4, color: "red", linecap: "round"}
+		this.schematic.line(min_x, min_y, max_x, max_y).stroke(style)
+		this.schematic.line(max_x, min_y, min_x, max_y).stroke(style)
 	}
 
 	handleVariation(variation)
