@@ -508,8 +508,20 @@ class AltiumSchematicRenderer
 							for (let g = -1; g < 2; g++)
 								schematic.line(obj.x + (g * 5), obj.y - 5, obj.x + (g * 5) - 3, obj.y - 10).stroke(style)
 							break;
+						case "GOST_ARROW":
+							let arrow = [
+								[obj.x, obj.y],
+								[obj.x, obj.y + 5],
+								[obj.x - 2, obj.y + 5],
+								[obj.x, obj.y + 10],
+								[obj.x + 2, obj.y + 5],
+								[obj.x, obj.y + 5]
+							]
+
+							schematic.polyline(arrow).fill(obj.color).stroke(style);
+							break;
 						default:
-							console.warn("AltiumPowerPort: Unknown symbol type!")
+							console.warn(`AltiumPowerPor - Unknown symbol type: ${obj.style_name}!`)
 							schematic.rect(20, (obj.orientation == 1) ? 10 : -10).fill(style).move(obj.x - 10, obj.y);
 							break;
 					}
