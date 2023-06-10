@@ -256,7 +256,7 @@ class AltiumPiechart extends AltiumObject
 }
 
 
-class AltiumRoundedRectangle extends AltiumRectangle
+class AltiumRoundedRectangle extends AltiumObject
 {
 	static { AltiumObject.RecordObjectMap.push({ id: 10, name: "Rounded Rectangle", type: this }) }
 	
@@ -267,6 +267,14 @@ class AltiumRoundedRectangle extends AltiumRectangle
 		this.rx = Number.parseInt(this.attributes.cornerxradius, 10);
 		this.ry = Number.parseInt(this.attributes.corneryradius, 10);
 
+		this.left = Number.parseInt(this.attributes.location_x, 10);
+		this.right = Number.parseInt(this.attributes.corner_x, 10);
+		this.top = Number.parseInt(this.attributes.corner_y, 10);
+		this.bottom = Number.parseInt(this.attributes.location_y, 10);
+		this.line_color = this.colorToHTML(this.attributes.color);
+		this.fill_color = this.colorToHTML(this.attributes.areacolor);
+		this.owner_display_mode = Number.parseInt(this.attributes.ownerpartdisplaymode ?? "-1", 10);
+		this.transparent = ((this.attributes.issolid ?? "F") != "T" || (this.attributes.transparent ?? "F") == "T") && this.owner_display_mode < 1;
 	}
 }
 

@@ -33,8 +33,9 @@ RENDER_ORDER = {
 
 class AltiumSchematicRenderer
 {
-	constructor(render_area, document)
+	constructor(window, render_area, document)
 	{
+		this.window = window;
 		this.render_area = render_area;
 		this.document = document;
 		this.parameters = [];
@@ -425,7 +426,15 @@ class AltiumSchematicRenderer
 				const fill = obj.fill_color;
 				const stroke = obj.line_color;
 				var rect = schematic.rect(obj.width, obj.height).move(obj.x, obj.y - obj.height)
-				rect.fill(fill).stroke(stroke)
+				obj.svg = rect.fill(fill).stroke(stroke).addClass("sheetsymbol")
+				rect.window = this.window;
+				rect.obj = obj;
+				rect.click(function() {
+					var fn = this.obj.filename;
+					if (fn.endsWith(".SchDoc"))
+						fn = fn.slice(0, -7);
+					this.window.getSchematic(fn);
+				})
 			}
 		
 			else if (obj instanceof AltiumSheetEntry)
@@ -527,6 +536,8 @@ class AltiumSchematicRenderer
 					if (param !== undefined)
 						obj.text = param.text;
 				}
+				if (obj instanceof AltiumSheetFilename)
+					obj.parent_object.filename = obj.text;
 				this.text(schematic, obj);
 			}
 
