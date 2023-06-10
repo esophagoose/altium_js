@@ -226,10 +226,12 @@ class AltiumSchematicRenderer
 				schematic.polyline(points).fill('none').stroke(style)
 			}
 
-			else if (obj instanceof AltiumRectangle)
+			else if (obj instanceof AltiumRectangle || obj instanceof AltiumRoundedRectangle)
 			{
 				obj.svg = schematic.rect(obj.right - obj.left, obj.top - obj.bottom)
 				const c = (!obj.transparent) ? obj.fill_color : '#ffffdb';
+				if (obj instanceof AltiumRoundedRectangle)
+					obj.svg.attr({rx: `${obj.rx}px`, ry: `${obj.ry}px`})
 				obj.svg.fill(c).stroke(obj.line_color)
 				obj.svg.move(obj.left, obj.bottom)
 			}

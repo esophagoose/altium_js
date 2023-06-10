@@ -256,13 +256,17 @@ class AltiumPiechart extends AltiumObject
 }
 
 
-class AltiumRoundedRectangle extends AltiumObject
+class AltiumRoundedRectangle extends AltiumRectangle
 {
 	static { AltiumObject.RecordObjectMap.push({ id: 10, name: "Rounded Rectangle", type: this }) }
 	
 	constructor(record)
 	{
 		super(record);
+
+		this.rx = Number.parseInt(this.attributes.cornerxradius, 10);
+		this.ry = Number.parseInt(this.attributes.corneryradius, 10);
+
 	}
 }
 
