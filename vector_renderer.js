@@ -483,11 +483,12 @@ class AltiumSchematicRenderer
 							power_port.line(obj.x - 5, obj.y + 10, obj.x + 5, obj.y + 10).stroke(style)
 							break;
 						case "POWER_GND":
-							power_port.line(obj.x, obj.y, obj.x, obj.y - 5).stroke(style)
+							power_port.line(obj.x, obj.y, obj.x, obj.y + 5).stroke(style)
 							power_port.line(obj.x - 11, obj.y + 5, obj.x + 11, obj.y + 5).stroke(style)
 							power_port.line(obj.x - 8, obj.y + 8, obj.x + 8, obj.y + 8).stroke(style)
 							power_port.line(obj.x - 5, obj.y + 11, obj.x + 5, obj.y + 11).stroke(style)
 							power_port.line(obj.x - 2, obj.y + 14, obj.x + 2, obj.y + 14).stroke(style)
+							obj.base_y = obj.y;
 							obj.y -= 14;
 							break;
 						case "SIGNAL_GND":
@@ -526,17 +527,18 @@ class AltiumSchematicRenderer
 							power_port.rect(20, (obj.orientation == 1) ? 10 : -10).fill(style).move(obj.x - 10, obj.y);
 							break;
 					}
-					power_port.addClass(`powerport-${obj.record_id}`).transform({
-						rotate: 90 * obj.orientation,
-						origin: [obj.x, obj.y]
-					});
 					if (obj.show_text)
 					{
 						const font = this.document.sheet.fonts[obj.font_id ?? 1];
 						const scalar = (obj.orientation == 2) ? -1 : 1;
 						obj.y += scalar * (font.size + 2);
-						this.text(power_port, obj);
+						this.text(schematic, obj);
 					}
+
+					power_port.addClass(`powerport-${obj.record_id}`).transform({
+						rotate: 90 * obj.orientation,
+						origin: [obj.x, obj.base_y ?? obj.y]
+					});
 				}
 				else
 				{
