@@ -471,42 +471,43 @@ class AltiumSchematicRenderer
 				const style = { width: 1, color: obj.color}
 				if (!obj.is_off_sheet_connector)
 				{
+					var power_port = schematic.group();
 					switch (obj.style_name)
 					{
 						case "DEFAULT":
-							schematic.line(obj.x, obj.y, obj.x, obj.y + 5).stroke(style)
-							schematic.circle(6).fill('none').stroke(style).move(obj.x - 3, obj.y + 5)
+							power_port.line(obj.x, obj.y, obj.x, obj.y + 5).stroke(style)
+							power_port.circle(6).fill('none').stroke(style).move(obj.x - 3, obj.y + 5)
 							break
 						case "BAR":
-							schematic.line(obj.x, obj.y, obj.x, obj.y + 10).stroke(style)
-							schematic.line(obj.x - 5, obj.y + 10, obj.x + 5, obj.y + 10).stroke(style)
+							power_port.line(obj.x, obj.y, obj.x, obj.y + 10).stroke(style)
+							power_port.line(obj.x - 5, obj.y + 10, obj.x + 5, obj.y + 10).stroke(style)
 							break;
 						case "POWER_GND":
-							schematic.line(obj.x, obj.y, obj.x, obj.y - 5).stroke(style)
-							schematic.line(obj.x - 11, obj.y - 5, obj.x + 11, obj.y - 5).stroke(style)
-							schematic.line(obj.x - 8, obj.y - 8, obj.x + 8, obj.y - 8).stroke(style)
-							schematic.line(obj.x - 5, obj.y - 11, obj.x + 5, obj.y - 11).stroke(style)
-							schematic.line(obj.x - 2, obj.y - 14, obj.x + 2, obj.y - 14).stroke(style)
+							power_port.line(obj.x, obj.y, obj.x, obj.y - 5).stroke(style)
+							power_port.line(obj.x - 11, obj.y + 5, obj.x + 11, obj.y + 5).stroke(style)
+							power_port.line(obj.x - 8, obj.y + 8, obj.x + 8, obj.y + 8).stroke(style)
+							power_port.line(obj.x - 5, obj.y + 11, obj.x + 5, obj.y + 11).stroke(style)
+							power_port.line(obj.x - 2, obj.y + 14, obj.x + 2, obj.y + 14).stroke(style)
 							obj.y -= 14;
 							break;
 						case "SIGNAL_GND":
 							let pts = [
 								[obj.x, obj.y],
-								[obj.x, obj.y - 5],
-								[obj.x - 10, obj.y - 5],
-								[obj.x, obj.y - 15],
-								[obj.x + 10, obj.y - 5],
-								[obj.x, obj.y - 5]
+								[obj.x, obj.y + 5],
+								[obj.x - 10, obj.y + 5],
+								[obj.x, obj.y + 15],
+								[obj.x + 10, obj.y + 5],
+								[obj.x, obj.y + 5]
 							]
 
-							schematic.polyline(pts).fill('none').stroke(style);
+							power_port.polyline(pts).fill('none').stroke(style);
 							break;
 						case "EARTH":
-							schematic.line(obj.x, obj.y, obj.x, obj.y - 5).stroke(style)
-							schematic.line(obj.x - 5, obj.y - 5, obj.x + 5, obj.y - 5).stroke(style)
+							power_port.line(obj.x, obj.y, obj.x, obj.y + 5).stroke(style)
+							power_port.line(obj.x - 5, obj.y + 5, obj.x + 5, obj.y + 5).stroke(style)
 
 							for (let g = -1; g < 2; g++)
-								schematic.line(obj.x + (g * 5), obj.y - 5, obj.x + (g * 5) - 3, obj.y - 10).stroke(style)
+								power_port.line(obj.x + (g * 5), obj.y + 5, obj.x + (g * 5) - 3, obj.y + 10).stroke(style)
 							break;
 						case "GOST_ARROW":
 							let arrow = [
@@ -518,19 +519,23 @@ class AltiumSchematicRenderer
 								[obj.x, obj.y + 5]
 							]
 
-							schematic.polyline(arrow).fill(obj.color).stroke(style);
+							power_port.polyline(arrow).fill(obj.color).stroke(style);
 							break;
 						default:
-							console.warn(`AltiumPowerPor - Unknown symbol type: ${obj.style_name}!`)
-							schematic.rect(20, (obj.orientation == 1) ? 10 : -10).fill(style).move(obj.x - 10, obj.y);
+							console.warn(`AltiumPowerPort - Unknown symbol type: ${obj.style_name}!`)
+							power_port.rect(20, (obj.orientation == 1) ? 10 : -10).fill(style).move(obj.x - 10, obj.y);
 							break;
 					}
+					power_port.addClass(`powerport-${obj.record_id}`).transform({
+						rotate: 90 * obj.orientation,
+						origin: [obj.x, obj.y]
+					});
 					if (obj.show_text)
 					{
 						const font = this.document.sheet.fonts[obj.font_id ?? 1];
 						const scalar = (obj.orientation == 2) ? -1 : 1;
 						obj.y += scalar * (font.size + 2);
-						this.text(schematic, obj);
+						this.text(power_port, obj);
 					}
 				}
 				else
