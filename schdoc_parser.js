@@ -105,6 +105,7 @@ class AltiumComponent extends AltiumObject
 		this.current_part_id = Number.parseInt(this.attributes.currentpartid ?? "-1", 10);
 		this.display_mode = Number.parseInt(this.attributes.displaymode ?? -1, 10);;
 		this.part_count = Number.parseInt(this.attributes.partcount ?? "1", 10);
+		this.dnp = false;
 	}
 }
 
@@ -739,6 +740,7 @@ class AltiumParameter extends AltiumObject
 		super(record);
 		this.x = Number.parseInt(this.attributes.location_x ?? "0", 10);
 		this.y = Number.parseInt(this.attributes.location_y ?? "0", 10);
+		this.changed = false;
 		this.color = this.colorToHTML(this.attributes.color);
 		this.name = (this.attributes.name) ?? "";
 		this.text = (this.attributes._utf8_text ?? this.attributes.text) ?? "";
@@ -1001,6 +1003,32 @@ class AltiumDocument
 		}
 		return null;
 	}
+	
+	setVariant(variant) {
+		for (let designator in variant.result) {
+			let results = this.objects.filter(x => {
+				return x instanceof AltiumDesignator && x.text == designator
+			});
+			if (results.length === 0)
+				continue
+			let component = results[0].parent_object;
+			let changes = Object.keys(variant.result[designator]);
+			if (changes.length == 0) {
+				component.dnp = true;
+				continue
+			}
+			component.child_objects.forEach(x => {
+				if (x instanceof AltiumParameter) {
+					let new_value = variant.result[designator][x.name];
+					if (new_value !== undefined) {
+						x.text = new_value;
+						x.changed = true;
+					}
+				}
+			});
+		}
+	}
+
 	
 	findParentRecord(start_index, record_type)
 	{

@@ -155,10 +155,10 @@ class AltiumSchematicRenderer
 		// Apply font first so the text sizing is correct before the transform
 		var tgroup = base.group().addClass(`text-${obj.record_index}`)
 		var text_svg = tgroup.text(_text).font({ 
-			fill: _color,
+			fill: !obj.changed ? _color : "darkgreen",
 			family: font.name,
-			style: font.italic ? "italic " : "normal",
-			weight: font.bold ? "bold " : "normal",
+			style: font.italic || obj.changed ? "italic " : "normal",
+			weight: font.bold || obj.changed ? "bold " : "normal",
 			size: font.size - 1,
 		});
 
@@ -433,7 +433,7 @@ class AltiumSchematicRenderer
 					var fn = this.obj.filename;
 					if (fn.endsWith(".SchDoc"))
 						fn = fn.slice(0, -7);
-					this.window.getSchematic(fn);
+					this.window.setSchematic(fn);
 				})
 			}
 		
@@ -647,7 +647,9 @@ class AltiumSchematicRenderer
 				console.warn(`Unhandled object: ${obj.constructor.name} ${obj.attributes["record"]}`)
 			}
 		}
+		
 		this.schematic = schematic;
+		this.handleDNPs();
 		const tx = (area.width - sheet.width * scale) / 2;
 		const ty = (area.height - sheet.height * scale) / 2;
 		frame.transform({
@@ -659,47 +661,45 @@ class AltiumSchematicRenderer
 		})
 	}
 
-
-
-	crossOutRefDes(refdes)
+	handleDNPs() 
 	{
-		let results = this.document.objects.filter(x => {
-			return x instanceof AltiumDesignator && x.text == refdes
-		});
-		if (results.length === 0)
-			return
-		let component = results[0].parent_object;
-		var min_x = 9999;
-		var max_x = 0;
-		var min_y = 9999;
-		var max_y = 0;
-		component.child_objects.filter(x => x instanceof AltiumRectangle).forEach(r => {
-			r.svg.fill("#eee").stroke("#aaa");
-			min_x = Math.min(min_x, r.left, r.right);
-			max_x = Math.max(max_x, r.left, r.right);
-			min_y = Math.min(min_y, r.top, r.bottom);
-			max_y = Math.max(max_y, r.top, r.bottom);
-		})
-		component.child_objects.filter(x => x instanceof AltiumLine).forEach(r => {
-			r.svg.stroke("#aaa");
-			min_x = Math.min(min_x, r.x1, r.x2);
-			max_x = Math.max(max_x, r.x1, r.x2);
-			min_y = Math.min(min_y, r.y1, r.y2);
-			max_y = Math.max(max_y, r.y1, r.y2);
-		})
-		component.child_objects.filter(x => (x instanceof AltiumParameter || x instanceof AltiumDesignator) && x.svg).forEach(r => {
-			r.svg.font({fill: "#aaa"})
-		})
-
-		if (min_x == 9999 || min_y == 9999)
-			return
-		let style = { width: 4, color: "red", linecap: "round"}
-		this.schematic.line(min_x, min_y, max_x, max_y).stroke(style)
-		this.schematic.line(max_x, min_y, min_x, max_y).stroke(style)
-	}
-
-	handleVariation(variation)
-	{
-
+		for (let obj of this.document.objects)
+		{
+			if (!(obj instanceof AltiumComponent))
+				continue
+			if (!obj.dnp)
+				continue
+			var min_x = Infinity;
+			var max_x = -Infinity;
+			var min_y = Infinity;
+			var max_y = -Infinity;
+			obj.child_objects.filter(x => x instanceof AltiumRectangle).forEach(r => {
+				if (r.svg !== undefined) {
+					r.svg.fill("#eee").stroke("#aaa");
+					min_x = Math.min(min_x, r.left, r.right);
+					max_x = Math.max(max_x, r.left, r.right);
+					min_y = Math.min(min_y, r.top, r.bottom);
+					max_y = Math.max(max_y, r.top, r.bottom);
+				}
+			})
+			obj.child_objects.filter(x => x instanceof AltiumLine).forEach(r => {
+				if (r.svg !== undefined) {
+					r.svg.stroke("#aaa");
+					min_x = Math.min(min_x, r.x1, r.x2);
+					max_x = Math.max(max_x, r.x1, r.x2);
+					min_y = Math.min(min_y, r.y1, r.y2);
+					max_y = Math.max(max_y, r.y1, r.y2);
+				}
+			})
+			obj.child_objects.filter(x => (x instanceof AltiumParameter || x instanceof AltiumDesignator) && x.svg).forEach(r => {
+				r.svg.font({fill: "#aaa"})
+			})
+	
+			if (min_x == Infinity || min_y == Infinity)
+				continue
+			let style = { width: 4, color: "red", linecap: "round"}
+			this.schematic.line(min_x, min_y, max_x, max_y).stroke(style)
+			this.schematic.line(max_x, min_y, min_x, max_y).stroke(style)
+		}
 	}
 }
